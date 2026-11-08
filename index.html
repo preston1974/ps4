@@ -272,11 +272,25 @@
     var _uaMatch  = _uaFull.match(/PlayStation 4[ /]([\d.]+)/i);
     var _isPS4    = _uaMatch !== null;
     var _fwGlobal = _isPS4 ? _uaMatch[1] : null;
+    // Polish UI is enabled only for the dedicated PS4 14.00 route.
+    var _isPolishFw14 = _isPS4 && parseFloat(_fwGlobal) === 14.00;
+
+    function fw14Text(polish, original) {
+        return _isPolishFw14 ? polish : original;
+    }
 
     // Показать версию прошивки справа в sc-info (постоянно)
     (function() {
         var el = document.getElementById('scInfoR');
         if (el) el.textContent = _fwGlobal ? 'FW ' + _fwGlobal : '';
+        if (_isPolishFw14) {
+            document.getElementById('scLbl').textContent = 'INICJALIZACJA';
+            document.getElementById('scStatus').textContent = 'OCZEKIWANIE...';
+            document.getElementById('loading-text').textContent = 'ŁADOWANIE...';
+            document.getElementById('footer-credits').innerHTML =
+                'Specjalnie dla 4PDA – Sony PlayStation 4: Jailbreak<br>' +
+                'Podziękowania dla wszystkich twórców sceny';
+        }
     })();
 
     // ════════════════════════════════════════════════════════════════════════
@@ -319,27 +333,27 @@
 
         if (state === 'cache') {
             w.className = 'zb';
-            document.getElementById('scLbl').textContent    = 'LOADING CACHE';
-            document.getElementById('scStatus').textContent = 'INSTALLING...';
-            document.getElementById('scInfoL').textContent  = 'APPCACHE';
+            document.getElementById('scLbl').textContent    = fw14Text('ŁADOWANIE PAMIĘCI PODRĘCZNEJ', 'LOADING CACHE');
+            document.getElementById('scStatus').textContent = fw14Text('INSTALOWANIE...', 'INSTALLING...');
+            document.getElementById('scInfoL').textContent  = fw14Text('PAMIĘĆ PODRĘCZNA', 'APPCACHE');
             animSegsStart();
         } else if (state === 'run') {
             w.className = 'zb';
-            document.getElementById('scLbl').textContent    = 'SCANNING KERNEL';
-            document.getElementById('scStatus').textContent = 'ОБХОД ЗАЩИТЫ...';
-            document.getElementById('scInfoL').textContent  = 'ROP CHAIN';
+            document.getElementById('scLbl').textContent    = fw14Text('SKANOWANIE JĄDRA', 'SCANNING KERNEL');
+            document.getElementById('scStatus').textContent = fw14Text('OMIJANIE ZABEZPIECZEŃ...', 'ОБХОД ЗАЩИТЫ...');
+            document.getElementById('scInfoL').textContent  = fw14Text('ŁAŃCUCH ROP', 'ROP CHAIN');
             animSegsStart();
         } else if (state === 'ok') {
             w.className = 'zb ss';
-            document.getElementById('scLbl').textContent    = 'KERNEL PATCHED';
-            document.getElementById('scStatus').textContent = 'СИСТЕМА ВЗЛОМАНА';
-            document.getElementById('scInfoL').textContent  = 'GOLDHEN ACTIVE';
+            document.getElementById('scLbl').textContent    = fw14Text('JĄDRO ZMODYFIKOWANE', 'KERNEL PATCHED');
+            document.getElementById('scStatus').textContent = fw14Text('SYSTEM ZMODYFIKOWANY', 'СИСТЕМА ВЗЛОМАНА');
+            document.getElementById('scInfoL').textContent  = fw14Text('GOLDHEN AKTYWNY', 'GOLDHEN ACTIVE');
             animSegsStop(true);
         } else if (state === 'err') {
             w.className = 'zb ff';
-            document.getElementById('scLbl').textContent    = 'EXPLOIT FAILED';
-            document.getElementById('scStatus').textContent = 'ОШИБКА — ПЕРЕЗАПУСТИТЕ КОНСОЛЬ';
-            document.getElementById('scInfoL').textContent  = 'CHAIN ABORTED';
+            document.getElementById('scLbl').textContent    = fw14Text('BŁĄD EKSPLOITA', 'EXPLOIT FAILED');
+            document.getElementById('scStatus').textContent = fw14Text('BŁĄD — URUCHOM PONOWNIE KONSOLĘ', 'ОШИБКА — ПЕРЕЗАПУСТИТЕ КОНСОЛЬ');
+            document.getElementById('scInfoL').textContent  = fw14Text('PRZERWANO ŁAŃCUCH', 'CHAIN ABORTED');
             animSegsStop(false);
         }
     }
@@ -382,7 +396,7 @@
         var fwNum = parseFloat(fwVersion);
 
         function addFrame(src, msgType) {
-            appendLog('Запуск эксплойта для FW ' + fwVersion + "...", "info");
+            appendLog(fw14Text('Uruchamianie exploita dla FW ', 'Запуск эксплойта для FW ') + fwVersion + "...", "info");
             setAnimState('run', fwVersion);
             var fr = document.createElement('iframe');
             fr.src = src;
@@ -411,7 +425,7 @@
                 if (e.data && e.data.type === msgType) {
                     var msg = e.data.msg || '';
                     var cls = e.data.cls || '';
-                    appendLog(msg, cls);
+                    appendLog(_isPolishFw14 && msg === 'DONE' ? 'GOTOWE' : msg, cls);
                     if (e.data.final) {
                         if (/ALL DONE|\bDONE\b|Kernel exploit succeeded|PSFree.*exploit.*AIO|AIO fixes applied|GoldHEN.*Loaded|Already [Jj]ailbroken|GoldHEN is Already Loaded|already open|PROOF-SUMMARY-FINAL[^|]*fail=0/i.test(msg)) {
                             setAnimState('ok');
@@ -478,12 +492,12 @@
         }
 
         if (!cache || cache.status === cache.UNCACHED) {
-            status_el.textContent = 'Установка кэша...';
+            status_el.textContent = fw14Text('Instalowanie pamięci podręcznej...', 'Установка кэша...');
             setAnimState('cache');
         } else if (cache.status === cache.IDLE || cache.status === cache.OBSOLETE) {
             launchExploit();
         } else {
-            status_el.textContent = 'Загрузка...';
+            status_el.textContent = fw14Text('Ładowanie...', 'Загрузка...');
             setAnimState('cache');
         }
 
@@ -501,8 +515,8 @@
             setProgress(100);
             setTimeout(function() {
                 switchToLog();
-                appendLog('Кэш установлен и проверен', "success");
-                appendLog('Отключите интернет и перезапустите консоль — хост готов к офлайн-работе', "info");
+                appendLog(fw14Text('Pamięć podręczna została zainstalowana i sprawdzona', 'Кэш установлен и проверен'), "success");
+                appendLog(fw14Text('Wyłącz internet i uruchom ponownie konsolę — host będzie gotowy do pracy offline', 'Отключите интернет и перезапустите консоль — хост готов к офлайн-работе'), "info");
             }, 1500);
         });
 
@@ -519,10 +533,10 @@
             if (cache.status === cache.IDLE || cache.status === cache.OBSOLETE) {
                 launchExploit();
             } else if (!exploitLaunched) {
-                status_el.textContent = 'Ошибка кэша';
+                status_el.textContent = fw14Text('Błąd pamięci podręcznej', 'Ошибка кэша');
                 bar_wrap.style.display = 'none';
                 progress_el.style.display = 'block';
-                progress_el.textContent = 'Очистите данные браузера и перезапустите консоль';
+                progress_el.textContent = fw14Text('Wyczyść dane przeglądarki i uruchom ponownie konsolę', 'Очистите данные браузера и перезапустите консоль');
                 setAnimState('err');
             }
         });

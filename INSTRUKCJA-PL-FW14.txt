@@ -1,0 +1,20 @@
+PS4 Free For All — polski interfejs dla firmware 14.00
+
+INSTALACJA
+1. Zrób kopię zapasową swojego katalogu projektu.
+2. Rozpakuj zawartość tego archiwum do głównego katalogu repozytorium
+   ps4freeforall, zachowując strukturę folderów i zezwalając na nadpisanie plików.
+3. W GitHub Desktop sprawdź zmiany (powinno być dokładnie 5 zmienionych plików).
+4. Po sprawdzeniu możesz zatwierdzić zmiany i wypchnąć je do swojego forka.
+
+ZAKRES ZMIAN
+- index.html: polskie etykiety tylko wtedy, gdy wykryte firmware to dokładnie 14.00.
+- ran/mps/exploit.html oraz ran/mps/index.html: polski interfejs ścieżki MPS.
+- ran/mps/exploit.js: polskie komunikaty widoczne dla użytkownika; wewnętrzny sygnał
+  sukcesu DONE przekazywany do strony nadrzędnej pozostaje bez zmian.
+- ps4.appcache: zmiana wersji manifestu z v28y na v28z, aby wymusić odświeżenie cache.
+
+Nie zmieniano core.js, afterglow.js, offsetów, payloadów ani pozostałych ścieżek
+firmware. Techniczne znaczniki diagnostyczne pozostawiono po angielsku.
+
+Pakiet przygotowano na podstawie rewizji 36ae88d1eb4db73c5b35e90f0e2de97de919d803.
