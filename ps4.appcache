@@ -1,6 +1,6 @@
 CACHE MANIFEST
 # PS4 WebKit Exploit Host - единый манифест всех цепочек
-# v29 - Polish UI preview for desktop browsers
+# v30 - Safe Firefox host simulation
 
 CACHE:
 index.html

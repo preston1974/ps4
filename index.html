@@ -225,6 +225,11 @@
         </div>
 
         <hr class="separator">
+        <div id="simulation-controls" style="display:none;flex:none;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:0 0 8px;font-family:Rajdhani,sans-serif;">
+            <span style="font-size:12px;color:#a9b4ca;letter-spacing:1px;">TRYB DEMONSTRACYJNY — bez uruchamiania exploita</span>
+            <button type="button" id="simulation-success" style="background:rgba(79,156,255,0.14);border:1px solid rgba(79,156,255,0.45);border-radius:8px;color:#c8deff;padding:6px 10px;cursor:pointer;">Scenariusz sukcesu</button>
+            <button type="button" id="simulation-error" style="background:rgba(255,107,107,0.10);border:1px solid rgba(255,107,107,0.4);border-radius:8px;color:#ffd1d1;padding:6px 10px;cursor:pointer;">Scenariusz błędu</button>
+        </div>
 
         <!-- Анимация Б — Горизонтальный сканер -->
         <div id="anim-zone">
@@ -272,9 +277,11 @@
     var _uaMatch  = _uaFull.match(/PlayStation 4[ /]([\d.]+)/i);
     var _isPS4    = _uaMatch !== null;
     var _fwGlobal = _isPS4 ? _uaMatch[1] : null;
+    var _simulationMode = /[?&]simulate=1(?:&|$)/.test(window.location.search);
+    var _simulationOutcome = /[?&]outcome=error(?:&|$)/.test(window.location.search) ? 'error' : 'success';
     // On desktop, show a Polish preview; on PS4, translate only firmware 14.00.
     var _isPolishFw14 = _isPS4 && parseFloat(_fwGlobal) === 14.00;
-    var _showPolishUi = !_isPS4 || _isPolishFw14;
+    var _showPolishUi = _simulationMode || !_isPS4 || _isPolishFw14;
 
     function fw14Text(polish, original) {
         return _showPolishUi ? polish : original;
@@ -384,6 +391,70 @@
         container.scrollTop = container.scrollHeight;
     }
 
+    var _simulationTimers = [];
+    var _simulationProgressTimer = null;
+    function scheduleSimulation(callback, delay) {
+        _simulationTimers.push(window.setTimeout(callback, delay));
+    }
+    function stopHostSimulation() {
+        if (_simulationProgressTimer) { window.clearInterval(_simulationProgressTimer); _simulationProgressTimer = null; }
+        for (var i = 0; i < _simulationTimers.length; i++) window.clearTimeout(_simulationTimers[i]);
+        _simulationTimers = [];
+    }
+    function runHostSimulation(outcome, setProgress) {
+        stopHostSimulation();
+        var phase = document.getElementById('phase-cache');
+        var status = document.getElementById('loading-text');
+        var log = document.getElementById('log-container');
+        var output = document.getElementById('log-output');
+        phase.style.display = 'block';
+        log.style.display = 'none';
+        output.innerHTML = '';
+        lastMsg = '';
+        document.getElementById('loading-progress').style.display = 'none';
+        status.textContent = 'Symulacja: przygotowywanie pamięci podręcznej...';
+        document.getElementById('scInfoR').textContent = 'FW 14.00 · DEMO';
+        setAnimState('cache', '14.00');
+        setProgress(0);
+        var percent = 0;
+        _simulationProgressTimer = window.setInterval(function() {
+            percent = Math.min(100, percent + 10);
+            setProgress(percent);
+            status.textContent = 'Symulacja: instalowanie cache ' + percent + '%';
+            if (percent >= 100) {
+                window.clearInterval(_simulationProgressTimer);
+                _simulationProgressTimer = null;
+                scheduleSimulation(function() {
+                    phase.style.display = 'none';
+                    switchToLog();
+                    appendLog('Pamięć podręczna gotowa [SYMULACJA]', 'success');
+                    appendLog('Uruchamianie MPS 14.00 / GoldHEN [SYMULACJA]', 'info');
+                    setAnimState('run', '14.00');
+                    document.getElementById('scInfoR').textContent = 'FW 14.00 · DEMO';
+                    scheduleSimulation(function() {
+                        appendLog('Skanowanie pamięci [SYMULACJA]', 'info');
+                        document.getElementById('scStatus').textContent = 'SYMULACJA W TOKU...';
+                        scheduleSimulation(function() {
+                            if (outcome === 'success') {
+                                setAnimState('ok', '14.00');
+                                document.getElementById('scLbl').textContent = 'SYMULACJA ZAKOŃCZONA';
+                                document.getElementById('scStatus').textContent = 'WYNIK TESTOWY: SUKCES';
+                                document.getElementById('scInfoL').textContent = 'GOLDHEN (DEMO)';
+                                appendLog('GoldHEN: wynik demonstracyjny — prawdziwy exploit nie został uruchomiony.', 'success');
+                            } else {
+                                setAnimState('err', '14.00');
+                                document.getElementById('scLbl').textContent = 'SYMULOWANY BŁĄD';
+                                document.getElementById('scStatus').textContent = 'WYNIK TESTOWY: BŁĄD';
+                                document.getElementById('scInfoL').textContent = 'MPS (DEMO)';
+                                appendLog('Błąd MPS: wynik demonstracyjny — prawdziwy exploit nie został uruchomiony.', 'error');
+                            }
+                        }, 900);
+                    }, 900);
+                }, 350);
+            }
+        }, 180);
+    }
+
     // ════════════════════════════════════════════════════════════════════════
     //  ЗАПУСК ЭКСПЛОЙТА
     // ════════════════════════════════════════════════════════════════════════
@@ -477,7 +548,6 @@
         var bar_wrap    = document.getElementById('progress-bar-wrap');
         var bar_fill    = document.getElementById('progress-bar-fill');
         var bar_label   = document.getElementById('progress-bar-label');
-        var cache = window.applicationCache;
 
         function setProgress(pct) {
             bar_wrap.style.display = 'block';
@@ -491,6 +561,23 @@
                 bar_label.className = 'progress-bar-label in-progress';
             }
         }
+
+        if (_simulationMode) {
+            document.title = 'PS4 WEBKIT — Symulacja';
+            document.getElementById('simulation-controls').style.display = 'flex';
+            document.getElementById('simulation-success').addEventListener('click', function() {
+                runHostSimulation('success', setProgress);
+            });
+            document.getElementById('simulation-error').addEventListener('click', function() {
+                runHostSimulation('error', setProgress);
+            });
+            runHostSimulation(_simulationOutcome, setProgress);
+            return;
+        }
+
+
+        var cache = window.applicationCache;
+
 
         if (!cache || cache.status === cache.UNCACHED) {
             status_el.textContent = fw14Text('Instalowanie pamięci podręcznej...', 'Установка кэша...');
