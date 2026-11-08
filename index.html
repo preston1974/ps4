@@ -272,18 +272,19 @@
     var _uaMatch  = _uaFull.match(/PlayStation 4[ /]([\d.]+)/i);
     var _isPS4    = _uaMatch !== null;
     var _fwGlobal = _isPS4 ? _uaMatch[1] : null;
-    // Polish UI is enabled only for the dedicated PS4 14.00 route.
+    // On desktop, show a Polish preview; on PS4, translate only firmware 14.00.
     var _isPolishFw14 = _isPS4 && parseFloat(_fwGlobal) === 14.00;
+    var _showPolishUi = !_isPS4 || _isPolishFw14;
 
     function fw14Text(polish, original) {
-        return _isPolishFw14 ? polish : original;
+        return _showPolishUi ? polish : original;
     }
 
     // Показать версию прошивки справа в sc-info (постоянно)
     (function() {
         var el = document.getElementById('scInfoR');
         if (el) el.textContent = _fwGlobal ? 'FW ' + _fwGlobal : '';
-        if (_isPolishFw14) {
+        if (_showPolishUi) {
             document.getElementById('scLbl').textContent = 'INICJALIZACJA';
             document.getElementById('scStatus').textContent = 'OCZEKIWANIE...';
             document.getElementById('loading-text').textContent = 'ŁADOWANIE...';
@@ -425,7 +426,7 @@
                 if (e.data && e.data.type === msgType) {
                     var msg = e.data.msg || '';
                     var cls = e.data.cls || '';
-                    appendLog(_isPolishFw14 && msg === 'DONE' ? 'GOTOWE' : msg, cls);
+                    appendLog(_showPolishUi && msg === 'DONE' ? 'GOTOWE' : msg, cls);
                     if (e.data.final) {
                         if (/ALL DONE|\bDONE\b|Kernel exploit succeeded|PSFree.*exploit.*AIO|AIO fixes applied|GoldHEN.*Loaded|Already [Jj]ailbroken|GoldHEN is Already Loaded|already open|PROOF-SUMMARY-FINAL[^|]*fail=0/i.test(msg)) {
                             setAnimState('ok');
